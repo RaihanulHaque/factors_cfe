@@ -141,8 +141,8 @@ def addLogo(img, n=10):
     newImg = np.zeros(shape=(height, width, 3), dtype=np.uint16)
     newImg[:, :, :] = 255
     newImg[logoImgHeight:, :] = img
-    newImg[20:logoImgHeight+20, width-logoImgWidth-20:width-20] = logoImgTemp
-    addText(newImg, f"Factors of {n}", (20, 20 + int(
+    newImg[20:logoImgHeight+20, width-logoImgWidth-50:width-50] = logoImgTemp
+    addText(newImg, f"Factors of {n}", (50, 20 + int(
         logoImgHeight*(3/4))), color=COLOR_BLACK, font_size=1.5 * logoImgHeight/FONT_PIX_H, thickness=4)
 
     # y_offset = 30
@@ -191,6 +191,7 @@ def createDetailedImage(n):
             printText = ""
 
     # Negative Integers
+    startingY += 50
     addText(npImg, f"Negative Factors of {n}:", (startingX, startingY),
             color=COLOR_BLACK, thickness=3)
     startingY += int(FONT_PIX_H*0.7)
