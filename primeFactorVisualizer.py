@@ -207,10 +207,11 @@ def createDetailedImage(n):
             startingY += int(FONT_PIX_H*0.7)
             printText = ""
 
-    saveImg(f"factors-of-{n}", npImg)
+    imgName = saveImg(f"factors-of-{n}", npImg)
     if __name__ == "__main__":
         plt.imshow(npImg)
         plt.show()
+    return imgName
 
 
 def createBoxStructure(n):
@@ -251,10 +252,11 @@ def createBoxStructure(n):
     centerElement(npImg, boxWidth+box.width*2,
                   width, box.y1, box.y2)
     npImg = addLogo(npImg, n)
-    saveImg(f"factors-of-{n}-box", npImg)
+    imgName = saveImg(f"factors-of-{n}-box", npImg)
     if __name__ == "__main__":
         plt.imshow(npImg)
         plt.show()
+    return imgName
 
 
 def centerElement(img, boxWidth, width, y1, y2):
@@ -347,10 +349,11 @@ def createArrowStructure(n):
         centerElement(npImg, boxWidth, width-50,
                       line[0].y1 - line[0].order*35, line[0].y2)
     npImg = addLogo(npImg, n)
-    saveImg(f"factors-of-{n}-arrow", npImg)
+    imgName = saveImg(f"factors-of-{n}-arrow", npImg)
     if __name__ == "__main__":
         plt.imshow(npImg)
         plt.show()
+    return imgName
 
 
 def createGeneralStructure(n):
@@ -393,25 +396,41 @@ def createGeneralStructure(n):
         #     plt.imshow(npImg)
         #     plt.show()
     npImg = addLogo(npImg, n)
-    saveImg(f"factors-of-{n}-general", npImg)
+    imgName = saveImg(f"factors-of-{n}-general", npImg)
     if __name__ == "__main__":
         plt.imshow(npImg)
         plt.show()
+    return imgName
 
 
-def saveImg(filename, img):
-    imgBGR = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-    cv2.imwrite(f"images/{filename}.jpg", imgBGR)
+def saveImg(filename: str, img):
+    imgWidth = 1024
+    imgHeight = int((imgWidth / img.shape[1]) * img.shape[0])
+    imgResized = cv2.resize(img, (imgWidth, imgHeight))
+    saveImg = cv2.cvtColor(imgResized, cv2.COLOR_RGB2BGR)
+    fileName = f"{IMG_STORAGE}/{filename}.webp"
+    cv2.imwrite(fileName, saveImg, [int(cv2.IMWRITE_WEBP_QUALITY), 80])
+    return fileName
+
+
+def generateFactorImages(n):
+    imgFiles = []
+    imgFiles.append(createDetailedImage(n))
+    imgFiles.append(createBoxStructure(n))
+    imgFiles.append(createArrowStructure(n))
+    imgFiles.append(createGeneralStructure(n))
+    return imgFiles
 
 
 if __name__ == "__main__":
-    n = 4096
-    # n = 20
+    # n = 4096
+    n = 840
     time1 = time.perf_counter()
-    createDetailedImage(n)
-    createBoxStructure(n)
-    createArrowStructure(n)
-    createGeneralStructure(n)
+    # createDetailedImage(n)
+    # createBoxStructure(n)
+    # createArrowStructure(n)
+    # createGeneralStructure(n)
+    print(generateFactorImages(n))
     # factors(n)
     time2 = time.perf_counter()
     print(time2 - time1)
