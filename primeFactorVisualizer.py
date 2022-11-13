@@ -127,7 +127,7 @@ def loadLogo(factor=0.25):
 loaded = False  # whether logo is loaded or not
 
 
-def addLogo(img, n=10):
+def addLogo(img, n=10, type: str = ""):
     global logoImg
     global loaded
     if (not loaded):
@@ -138,18 +138,26 @@ def addLogo(img, n=10):
     logoImgTemp = cv2.resize(logoImg, (logoImgWidth, logoImgHeight))
     height = img.shape[0] + logoImgHeight
     width = img.shape[1]
-    newImg = np.zeros(shape=(height, width, 3), dtype=np.uint16)
-    newImg[:, :, :] = 255
-    newImg[logoImgHeight:, :] = img
+    if (type != "detailed"):
+        newImg = np.zeros(shape=(height, width, 3), dtype=np.uint16)
+        newImg[:, :, :] = 255
+        newImg[logoImgHeight:, :] = img
+    else:
+        newImg = img
     newImg[20:logoImgHeight+20, width-logoImgWidth-50:width-50] = logoImgTemp
-    addText(newImg, f"Factors of {n}", (50, 20 + int(
-        logoImgHeight*(3/4))), color=COLOR_BLACK, font_size=1.5 * logoImgHeight/FONT_PIX_H, thickness=4)
+    if type == "":
+        addText(newImg, f"Factors of {n}", (50, 20 + int(
+            logoImgHeight*(3/4))), color=COLOR_BLACK, font_size=1.5 * logoImgHeight/FONT_PIX_H, thickness=4)
+    elif type == "arrow":
+        addText(newImg, f"Factor Pairs of {n}", (50, 20 + int(
+            logoImgHeight*(3/4))), color=COLOR_BLACK, font_size=1.2 * logoImgHeight/FONT_PIX_H, thickness=4)
+    elif type == "multiplication":
+        addText(newImg, f"Factors of {n} - Multiplication Method", (50, 20 + int(
+            logoImgHeight*(3/4))), color=COLOR_BLACK, font_size=0.8 * logoImgHeight/FONT_PIX_H, thickness=2)
+    elif type == "division":
+        addText(newImg, f"Factors of {n} - Division Method", (50, 20 + int(
+            logoImgHeight*(3/4))), color=COLOR_BLACK, font_size=0.8 * logoImgHeight/FONT_PIX_H, thickness=2)
 
-    # y_offset = 30
-    # y_end = y_offset + logoImg.shape[0]
-    # x_offset = img.shape[1] - logoImg.shape[1] - 30
-    # x_end = img.shape[1] - 30
-    # img[y_offset:y_end, x_offset:x_end] = logoImg
     return newImg
 
 
@@ -160,15 +168,53 @@ def addText(img, text, pos, color=COLOR_WHITE, font_size=FONT_SIZE, thickness=2)
                 color=color, thickness=thickness)
 
 
-def createDetailedImage(n):
+def createDetailedImage(n, height=1024):
     factorsDict, factorsList, factorsListUnique = factors(n)
     width = 1920
-    height = 1080
     npImg = np.zeros(shape=(height, width, 3), dtype=np.uint16)
     npImg[:, :, :] = 255
     startingX = 50
     startingY = 100
     endingX = width - 50
+
+    # For using in factor pairs later
+    factors_l = factorsList[:len(factorsList)//2]
+    factors_r = factorsList[len(factorsList)//2:]
+
+    # Number of all factors
+    addText(npImg, f"Number of Factors of {n}:", (startingX, startingY),
+            color=COLOR_BLACK, thickness=3)
+    startingY += int(FONT_PIX_H*0.7)
+    addText(npImg, f"{len(factorsListUnique)}", (startingX+20, startingY),
+            color=COLOR_ELEPHANT)
+    startingY += 50 + int(FONT_PIX_H*0.7)
+
+    # Sum of factors
+    addText(npImg, f"Sum of Factors of {n}:", (startingX, startingY),
+            color=COLOR_BLACK, thickness=3)
+    startingY += int(FONT_PIX_H*0.7)
+    sum = 0
+    for elem in factorsListUnique:
+        sum += elem
+    addText(npImg, f"{sum}", (startingX+20, startingY),
+            color=COLOR_ELEPHANT)
+    startingY += 50 + int(FONT_PIX_H*0.7)
+
+    # Product of factors
+    addText(npImg, f"Product of Factors of {n}:", (startingX, startingY),
+            color=COLOR_BLACK, thickness=3)
+    startingY += int(FONT_PIX_H*0.7)
+    product = 1
+    for elem in factorsListUnique:
+        product *= elem
+    product = "{:2e}".format(product)
+    num_pow = product[-2:]
+    num_base = f"{product[:-4]}x10"
+    addText(npImg, f"{num_base}", (startingX+20, startingY),
+            color=COLOR_ELEPHANT)
+    addText(npImg, num_pow, (int(startingX+20+len(num_base) *
+            FONT_PIX_W*0.9), startingY-30), color=COLOR_ELEPHANT, font_size=1)
+    startingY += 50 + int(FONT_PIX_H*0.7)
 
     # Positive Integers
     addText(npImg, f"Factors of {n}:", (startingX, startingY),
@@ -190,8 +236,30 @@ def createDetailedImage(n):
             startingY += int(FONT_PIX_H*0.7)
             printText = ""
 
-    # Negative Integers
+    # Factor Pairs
     startingY += 50
+    printText = ""
+    addText(npImg, f"Factor Pairs of {n}:", (startingX, startingY),
+            color=COLOR_BLACK, thickness=3)
+    startingY += int(FONT_PIX_H*0.7)
+    for i in range(0, len(factors_l), 1):
+        printText += f"({factors_l[i]}, {factors_r[len(factors_l)-i-1]}){', ' if factors_l[i] != factors_l[-1] else ''}"
+        printLen = len(printText) * FONT_PIX_W
+        if (factors_l[i] == factors_l[-1]):
+            addText(npImg, printText, pos=(
+                startingX + 20, startingY), color=COLOR_ELEPHANT)
+            startingY += int(FONT_PIX_H*0.7)
+            printText = ""
+            break
+        if (printLen >= endingX):
+            addText(npImg, printText, (startingX+20,
+                    startingY), color=COLOR_ELEPHANT)
+            startingY += int(FONT_PIX_H*0.7)
+            printText = ""
+    startingY += 50
+
+    # Negative Integers
+    printText = ""
     addText(npImg, f"Negative Factors of {n}:", (startingX, startingY),
             color=COLOR_BLACK, thickness=3)
     startingY += int(FONT_PIX_H*0.7)
@@ -207,7 +275,9 @@ def createDetailedImage(n):
                     startingY), color=COLOR_ELEPHANT)
             startingY += int(FONT_PIX_H*0.7)
             printText = ""
-
+    if (startingY > height):
+        return createDetailedImage(n, startingY+50)
+    addLogo(npImg, n, "detailed")
     imgName = saveImg(f"factors-of-{n}", npImg)
     if __name__ == "__main__":
         plt.imshow(npImg)
@@ -264,7 +334,11 @@ def centerElement(img, boxWidth, width, y1, y2):
     newImg = img[y1-5:y2+5, :boxWidth, :].copy()
     img[y1-5:y2+5, :boxWidth, :] = 255
     starting = (width-boxWidth) // 2
-    img[y1-5: y2+5, starting:boxWidth+starting, :] = newImg
+    try:
+        img[y1-5: y2+5, starting:boxWidth+starting, :] = newImg
+    except Exception as e:
+        starting -= ((boxWidth+starting) - img.shape[1]) + 10
+        img[y1-5: y2+5, :boxWidth, :] = newImg
     pass
 
 
@@ -349,7 +423,7 @@ def createArrowStructure(n):
             line[i].joinCompanions(npImg)
         centerElement(npImg, boxWidth, width-50,
                       line[0].y1 - line[0].order*35, line[0].y2)
-    npImg = addLogo(npImg, n)
+    npImg = addLogo(npImg, n, type="arrow")
     imgName = saveImg(f"factors-of-{n}-arrow", npImg)
     if __name__ == "__main__":
         plt.imshow(npImg)
@@ -357,10 +431,10 @@ def createArrowStructure(n):
     return imgName
 
 
-def createGeneralStructure(n):
+def createMultiplicationStructure(n):
     factorsDict, factorsList, factorsListUnique = factors(n)
     # Estimating width of element
-    boxText = f"  {factorsList[0]}   x    {factorsList[-1]}  "
+    boxText = f"  {factorsList[0]}  x  {factorsList[-1]}  "
 
     # Height and Width determination
     if (len(factorsList) > 2):  # If number is not prime number
@@ -381,7 +455,8 @@ def createGeneralStructure(n):
         startingPoint = [(width//2) - (FONT_PIX_W*3), 100]
     for i in range(0, len(factorsList)//2):
         if (i != 0 and i >= len(factorsList)//4 and divided == 0):
-            startingPoint[0] = startingPoint[0] + int(len(boxText)*FONT_PIX_W)
+            startingPoint[0] = startingPoint[0] + \
+                int(len(boxText)*FONT_PIX_W) + 100
             startingPoint[1] = 100
             divided = 1
         boxM = Box("x", startingPoint[0],
@@ -396,8 +471,56 @@ def createGeneralStructure(n):
         #     print(f"{boxM.previous.n} x {boxM.next.n}")
         #     plt.imshow(npImg)
         #     plt.show()
-    npImg = addLogo(npImg, n)
-    imgName = saveImg(f"factors-of-{n}-general", npImg)
+    npImg = addLogo(npImg, n, type="multiplication")
+    imgName = saveImg(f"factors-of-{n}-multiplication", npImg)
+    if __name__ == "__main__":
+        plt.imshow(npImg)
+        plt.show()
+    return imgName
+
+
+def createDivisionStructure(n):
+    factorsDict, factorsList, factorsListUnique = factors(n)
+    # Estimating width of element
+    boxText = f"  {n}  /  {factorsList[0]}  =  {factorsList[-1]}  "
+
+    # Height and Width determination
+    if (len(factorsList) > 2):  # If number is not prime number
+        height = int(len(factorsList)/4 * FONT_PIX_H) + 200
+    else:  # If number is prime number
+        height = int(2 * FONT_PIX_H) + 200
+
+    width = len(boxText) * FONT_PIX_W * 2 + 300
+
+    # Creating white background image
+    npImg = np.zeros(shape=(height, width, 3), dtype=np.uint16)
+    npImg[:, :, :] = 255
+
+    divided = 0
+    if (len(factorsList) > 2):
+        startingPoint = [(width//4), 100]
+    else:
+        startingPoint = [(width//2), 100]
+    for i in range(0, len(factorsList)//2):
+        if (i != 0 and i >= len(factorsList)//4 and divided == 0):
+            startingPoint[0] = startingPoint[0] + \
+                int(len(boxText)*FONT_PIX_W) + 100
+            startingPoint[1] = 100
+            divided = 1
+        boxM = Box("=", startingPoint[0],
+                   startingPoint[1])
+        startingPoint[1] += FONT_PIX_H
+        boxM.addPrevious(f"{n} / {factorsList[i]}")
+        boxM.addNext(f"{factorsList[len(factorsList) - 1 - i]}")
+        boxM.draw_backgroundless(npImg)
+        boxM.previous.draw_backgroundless(npImg)
+        boxM.next.draw_backgroundless(npImg)
+        # if __name__ == "__main__":
+        #     print(f"{boxM.previous.n} x {boxM.next.n}")
+        #     plt.imshow(npImg)
+        #     plt.show()
+    npImg = addLogo(npImg, n, type="division")
+    imgName = saveImg(f"factors-of-{n}-division", npImg)
     if __name__ == "__main__":
         plt.imshow(npImg)
         plt.show()
@@ -419,19 +542,25 @@ def generateFactorImages(n):
     imgFiles.append(createDetailedImage(n))
     imgFiles.append(createBoxStructure(n))
     imgFiles.append(createArrowStructure(n))
-    imgFiles.append(createGeneralStructure(n))
+    imgFiles.append(createMultiplicationStructure(n))
+    imgFiles.append(createDivisionStructure(n))
     return imgFiles
 
 
 if __name__ == "__main__":
     # n = 4096
+    # n = 19997
+    # n = 120
+    # n = 4096
     n = 840
+    # n = 5
     time1 = time.perf_counter()
     # createDetailedImage(n)
     # createBoxStructure(n)
     # createArrowStructure(n)
-    # createGeneralStructure(n)
+    # createMultiplicationStructure(n)
     print(generateFactorImages(n))
+    # createDivisionStructure(n)
     # factors(n)
     time2 = time.perf_counter()
     print(time2 - time1)
